@@ -1,0 +1,39 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Stmt1673020010573",
+      "Action": "s3:*",
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::*"
+    },
+    {
+      "Sid": "Stmt1673020089660",
+      "Action": "rekognition:*",
+      "Effect": "Allow",
+      "Resource": "arn:aws:rekognition:*"
+    },
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "Stmt1673104164164",
+          "Action": "elasticache:*",
+          "Effect": "Allow",
+          "Resource": "arn:aws:elasticache:::::*"
+        }
+      ]
+    },
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "Stmt1673111231281",
+          "Action": "ses:SendEmail",
+          "Effect": "Allow",
+          "Resource": "*"
+        }
+      ]
+    }
+  ]
+}
