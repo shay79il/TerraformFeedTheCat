@@ -1,3 +1,5 @@
 .terraform/*
 .terraform.lock.hcl
 .vscode/settings.json
+python/send_warning.zip
+python/rekognition.zip

@@ -1,11 +1,6 @@
-locals {
-  lambda_rekognition_zip_path = "${path.module}/python/rekognition.zip"
-  lambda_redis_check_zip_path = "${path.module}/python/send_warning.zip"
-}
-
 resource "random_string" "suffix" {
-  length           = 8
-  special          = false
+  length           = var.random_string_length
+  special          = var.random_string_special
 }
 
 ##############################
@@ -33,12 +28,12 @@ resource "aws_lambda_function" "check_redis_variable" {
   function_name = "check_redis_variable"
   role          = aws_iam_role.lambda.arn
   handler       = "send_warning.lambda_handler"
-  runtime       = "python3.8"
+  runtime       = var.lambda_function_runtime
 
   environment {
     variables = {
       REDIS_CLUSTER_ID = aws_elasticache_cluster.redis.id
-      EMAIL_ADDRESS    = "shay79il@gmail.com"
+      EMAIL_ADDRESS    = var.email
     }
   }
 }
@@ -48,7 +43,7 @@ resource "aws_lambda_function" "rekognition_s3_upload" {
  function_name                  = "Lambda-Function"
  role                           = aws_iam_role.lambda.arn
  handler                        = "rekognition_s3_upload.lambda_handler"
- runtime                        = "python3.8"
+ runtime                        = var.lambda_function_runtime
  depends_on                     = [aws_iam_role_policy_attachment.lambda]
 }
 
@@ -61,16 +56,16 @@ resource "aws_lambda_permission" "allow_s3" {
   source_arn = "arn:aws:s3:::${aws_s3_bucket.bucket.id}"
 }
 
-##################
+######################################################
 # Creating s3 resource for invoking to lambda function
-##################
+######################################################
 resource "aws_s3_bucket" "bucket" {
   bucket = "cat-bucket-${random_string.suffix.result}"
 }
 
 resource "aws_s3_bucket_acl" "example_bucket_acl" {
   bucket = aws_s3_bucket.bucket.id
-  acl    = "private"
+  acl    = var.s3_bucket_acl
 }
 
 ##################
@@ -81,7 +76,7 @@ resource "aws_s3_bucket_notification" "aws-lambda-trigger" {
   lambda_function {
     lambda_function_arn = "${aws_lambda_function.rekognition_s3_upload.arn}"
     events              = ["s3:ObjectCreated:*"]
-    filter_suffix       = ".jpg"                                   
+    filter_suffix       = var.filter_suffix                                  
   }
 }
 
@@ -91,13 +86,13 @@ resource "aws_s3_bucket_notification" "aws-lambda-trigger" {
 # Redis
 ##################
 resource "aws_elasticache_cluster" "redis" {
-  cluster_id           = "temp-cluster"
-  engine               = "redis"
-  node_type            = "cache.t2.micro"
-  num_cache_nodes      = 1
-  parameter_group_name = "default.redis3.2"
-  engine_version       = "3.2.10"
-  port                 = 6379
+  cluster_id           = var.elasticache_cluster_id
+  engine               = var.elasticache_cluster_engine
+  node_type            = var.elasticache_cluster_node_type
+  num_cache_nodes      = var.elasticache_cluster_num_cache_nodes
+  parameter_group_name = var.elasticache_cluster_group_name
+  engine_version       = var.elasticache_cluster_engine_version
+  port                 = var.elasticache_cluster_port
 }
 
 
@@ -110,7 +105,7 @@ resource "aws_elasticache_cluster" "redis" {
 resource "aws_cloudwatch_event_rule" "check_elasticache_variable" {
   name        = "check_redis_variable_15min"
   description = "Event rule to trigger Lambda function every 15 minutes"
-  schedule_expression = "rate(15 minutes)"
+  schedule_expression = "rate(${var.cloudwatch_event_rule_rate} minutes)"
 }
 
 resource "aws_cloudwatch_event_target" "check_elasticache_variable" {
@@ -125,5 +120,5 @@ resource "aws_cloudwatch_event_target" "check_elasticache_variable" {
 # SES Service
 ##################
 resource "aws_ses_email_identity" "warning_email_identity" {
-  email = "shay79il@gmail.com"
+  email = var.email
 }
